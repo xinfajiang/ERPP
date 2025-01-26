@@ -31,7 +31,7 @@ cd script/
 1. Run scripts
 
 ```
-python run.py --gpus 0 -d YAGO --batch_size 64 --history_len 10
+python run.py --gpus 0 --dataset ENTITY --batch_size 32 --dim 64 --layer_num 6 --message_func distmult --aggregate_func sum
 ```
 
 
