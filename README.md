@@ -3,7 +3,7 @@
 # From Knowledge Forgetting to Accumulation:Evolutionary Relation Path Passing for Lifelong Knowledge Graph Embedding #
 </div>
 
-![ERPP](images/ERPP_overview.pdf)
+![ERPP](ERPP_overview.pdf)
 
 This is the code release for the paper.
 
