@@ -16,7 +16,7 @@ class Layer(MessagePassing):
         "distmult": "mul",
     }
     def __init__(self, input_dim, output_dim, num_relation, query_input_dim, message_func="distmult",
-                 aggregate_func="pna", layer_norm=False, activation="relu", dependent=False, project_relations=False, relation_num=0):
+                 aggregate_func="sum", layer_norm=False, activation="relu", dependent=False, project_relations=False, relation_num=0):
         super(Layer, self).__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim

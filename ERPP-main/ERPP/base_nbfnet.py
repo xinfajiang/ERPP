@@ -21,8 +21,8 @@ class BaseNBFNet(nn.Module):
         self.dims = [input_dim] + list(hidden_dims)
         self.num_relation = num_relation
         self.short_cut = short_cut  
-        self.concat_hidden = concat_hidden  
-        self.remove_one_hop = remove_one_hop 
+        self.concat_hidden = concat_hidden 
+        self.remove_one_hop = remove_one_hop  
         self.num_beam = num_beam
         self.path_topk = path_topk
 
@@ -33,7 +33,6 @@ class BaseNBFNet(nn.Module):
         self.num_mlp_layers = num_mlp_layer
 
     def remove_easy_edges(self, data, h_index, t_index, r_index=None):
-
         h_index_ext = torch.cat([h_index, t_index], dim=-1)
         t_index_ext = torch.cat([t_index, h_index], dim=-1)
         r_index_ext = torch.cat([r_index, r_index + data.num_relations // 2], dim=-1)
@@ -62,6 +61,7 @@ class BaseNBFNet(nn.Module):
 
     def bellmanford(self, data, h_index, r_index, separate_grad=False):
         batch_size = len(r_index)
+
         query = self.query(r_index)
         index = h_index.unsqueeze(-1).expand_as(query)
         boundary = torch.zeros(batch_size, data.num_nodes, self.dims[0], device=h_index.device)
@@ -96,20 +96,16 @@ class BaseNBFNet(nn.Module):
     def forward(self, data, batch):
         h_index, t_index, r_index = batch.unbind(-1)
         if self.training:
-
             data = self.remove_easy_edges(data, h_index, t_index, r_index, data.num_relations // 2)
 
         shape = h_index.shape
-
         h_index, t_index, r_index = self.negative_sample_to_tail(h_index, t_index, r_index, num_direct_rel=data.num_relations // 2)
         assert (h_index[:, [0]] == h_index).all()
         assert (r_index[:, [0]] == r_index).all()
 
-
-        output = self.bellmanford(data, h_index[:, 0], r_index[:, 0])
+        output = self.bellmanford(data, h_index[:, 0], r_index[:, 0]) 
         feature = output["node_feature"]
         index = t_index.unsqueeze(-1).expand(-1, -1, feature.shape[-1])
-
         feature = feature.gather(1, index) 
         score = self.mlp(feature).squeeze(-1)
         return score.view(shape)
@@ -146,21 +142,26 @@ class BaseNBFNet(nn.Module):
             relation = data.edge_type[edge_mask]
             edge_grad = edge_grad[edge_mask]
 
-            message = input[node_in] + edge_grad.unsqueeze(-1) 
+            message = input[node_in] + edge_grad.unsqueeze(-1)
 
             msg_source = torch.stack([node_in, node_out, relation], dim=-1).unsqueeze(1).expand(-1, num_beam, -1)
+
             is_duplicate = torch.isclose(message.unsqueeze(-1), message.unsqueeze(-2)) & \
                            (msg_source.unsqueeze(-2) == msg_source.unsqueeze(-3)).all(dim=-1)
+
             is_duplicate = is_duplicate.float() - \
                            torch.arange(num_beam, dtype=torch.float, device=message.device) / (num_beam + 1)
             prev_rank = is_duplicate.argmax(dim=-1, keepdim=True)
-            msg_source = torch.cat([msg_source, prev_rank], dim=-1) 
+            msg_source = torch.cat([msg_source, prev_rank], dim=-1)
+
             node_out, order = node_out.sort()
             node_out_set = torch.unique(node_out)
+
             message = message[order].flatten() 
             msg_source = msg_source[order].flatten(0, -2) 
             size = node_out.bincount(minlength=num_nodes)
             msg2out = size_to_index(size[node_out_set] * num_beam)
+
             is_duplicate = (msg_source[1:] == msg_source[:-1]).all(dim=-1)
             is_duplicate = torch.cat([torch.zeros(1, dtype=torch.bool, device=message.device), is_duplicate])
             message = message[~is_duplicate]
@@ -172,7 +173,6 @@ class BaseNBFNet(nn.Module):
 
                 distance, rel_index = scatter_topk(message, size, k=num_beam)
                 abs_index = rel_index + (size.cumsum(0) - size).unsqueeze(-1)
-
                 back_edge = msg_source[abs_index]
                 distance = distance.view(len(node_out_set), num_beam)
                 back_edge = back_edge.view(len(node_out_set), num_beam, 4)
@@ -189,6 +189,7 @@ class BaseNBFNet(nn.Module):
         return distances, back_edges
 
     def topk_average_length(self, distances, back_edges, t_index, k=10):
+
         paths = []
         average_lengths = []
 

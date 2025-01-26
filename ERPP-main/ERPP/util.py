@@ -2,7 +2,6 @@ import os
 import ast
 import time
 import logging
-import argparse
 import yaml
 import jinja2
 from jinja2 import meta
@@ -39,14 +38,6 @@ def literal_eval(string):
         return string
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-c", "--config", help="yaml configuration file", type=str, default="./")
-    parser.add_argument("-s", "--seed", help="random seed for PyTorch", type=int, default=1024)
-    args, unparsed = parser.parse_known_args()
-    vars = {'epochs': 15, 'gpus': '[1]', 'dataset': 'ENTITY'}
-
-    return args, vars
 
 
 def get_root_logger(file=True):
@@ -86,9 +77,9 @@ def synchronize():
         dist.barrier()
 
 
-def get_device(cfg):
-    if cfg.train.gpus:
-        device = torch.device(cfg.train.gpus[get_rank()])
+def get_device(args):
+    if args['use_gpus']:
+        device = torch.device(args['gpus'])
     else:
         device = torch.device("cpu")
     return device
